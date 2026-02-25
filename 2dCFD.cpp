@@ -107,16 +107,17 @@ int main() {
                     gn[z][x].p = p_new[z][x];
                 }
             }
+            //圧力境界条件
+            for(int z = 0; z < zMax; z++) {
+                gn[z][0].p      = gn[z][1].p;          // 左壁
+                gn[z][xMax-1].p = gn[z][xMax-2].p;     // 右壁
+            }
+            for(int x = 0; x < xMax; x++) {
+                gn[0][x].p      = gn[1][x].p;          // 上壁
+                gn[zMax-1][x].p = gn[zMax-2][x].p;     // 下壁
+            }
         }
-        //圧力境界条件
-        for(int z = 0; z < zMax; z++) {
-            gn[z][0].p      = gn[z][1].p;          // 左壁
-            gn[z][xMax-1].p = gn[z][xMax-2].p;     // 右壁
-        }
-        for(int x = 0; x < xMax; x++) {
-            gn[0][x].p      = gn[1][x].p;          // 上壁
-            gn[zMax-1][x].p = gn[zMax-2][x].p;     // 下壁
-        }
+        
 
         // Step3:速度更新
         for(int z=1;z<zMax-1;z++) {
