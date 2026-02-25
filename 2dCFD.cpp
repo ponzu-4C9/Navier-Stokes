@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <cstdio>
 using namespace std;
 
 struct Cell {
@@ -11,25 +12,52 @@ struct Cell {
 double xm = 10;//領域の大きさ[m]
 double zm = 10;
 
-int zMax = 100;//格子の数
-int xMax = 100;
+constexpr int zMax = 1000;//格子の数
+constexpr int xMax = 1000;
 
 double dx = xm / (xMax-1);//格子の大きさ[m]
 double dz = zm / (zMax-1);
 
-Cell g[zMax][xMax];
-Cell gn[zMax][xMax];
+static Cell g[zMax][xMax];
+static Cell gn[zMax][xMax];
 //x方向の風をu
 //z方向の風をv
 
 double rho = 1.225;
 double nu  = 1.48e-5; // 空気の動粘性係数 (m^2/s)
 
+// ファイルにヘッダ（格子情報）を書き込む
+void writeHeader(FILE* fp) {
+    fwrite(&zMax, sizeof(int), 1, fp);
+    fwrite(&xMax, sizeof(int), 1, fp);
+    fwrite(&dx, sizeof(double), 1, fp);
+    fwrite(&dz, sizeof(double), 1, fp);
+}
+
+// 1フレーム分のデータ（時刻 + u,v,p 配列）を書き込む
+void writeFrame(FILE* fp, double t, Cell grid[][xMax]) {
+    fwrite(&t, sizeof(double), 1, fp);
+    for (int z = 0; z < zMax; z++)
+        for (int x = 0; x < xMax; x++)
+            fwrite(&grid[z][x].u, sizeof(double), 1, fp);
+    for (int z = 0; z < zMax; z++)
+        for (int x = 0; x < xMax; x++)
+            fwrite(&grid[z][x].v, sizeof(double), 1, fp);
+    for (int z = 0; z < zMax; z++)
+        for (int x = 0; x < xMax; x++)
+            fwrite(&grid[z][x].p, sizeof(double), 1, fp);
+}
 
 int main() {
     double t_max = 100;//[s]
     double dt = 0.001;//[s]
     double t = 0;
+
+    // 出力ファイルを開いてヘッダを書き込む
+    FILE* fp = fopen("output.bin", "wb");
+    writeHeader(fp);
+    double save_interval = 0.1; // 保存間隔 [s]
+    double next_save = 0.0;
 
     while(t < t_max) {
         // Step 1: 仮の速度 (u*, v*) を求めるループ
@@ -43,18 +71,18 @@ int main() {
                 } else {
                     du_dx = (g[z][x+1].u - g[z][x].u) / dx;
                 }
-                if (g[z][x].u > 0) {
-                    du_dz = (g[z][x].v - g[z-1][x].v) / dz;
+                if (g[z][x].v > 0) {
+                    du_dz = (g[z][x].u - g[z-1][x].u) / dz;
                 } else {
-                    du_dz = (g[z+1][x].v - g[z][x].v) / dz;
+                    du_dz = (g[z+1][x].u - g[z][x].u) / dz;
                 }
                 double advection_u = g[z][x].u * du_dx + g[z][x].v * du_dz;//これがいわゆる(v・∇)v
 
                 double dv_dx,dv_dz;
-                if (g[z][x].v > 0) {
-                    dv_dx = (g[z][x].u - g[z][x-1].u) / dx;
+                if (g[z][x].u > 0) {
+                    dv_dx = (g[z][x].v - g[z][x-1].v) / dx;
                 } else {
-                    dv_dx = (g[z][x+1].u - g[z][x].u) / dx;
+                    dv_dx = (g[z][x+1].v - g[z][x].v) / dx;
                 }
                 if (g[z][x].v > 0) {
                     dv_dz = (g[z][x].v - g[z-1][x].v) / dz;
@@ -160,6 +188,13 @@ int main() {
         }
 
         t += dt;
+
+        // 一定間隔でフレームを保存
+        if (t >= next_save) {
+            writeFrame(fp, t, g);
+            next_save += save_interval;
+        }
     }
+    fclose(fp);
     return 0;
 }
