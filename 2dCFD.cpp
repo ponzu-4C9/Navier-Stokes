@@ -43,29 +43,26 @@ int main() {
                 } else {
                     du_dx = (g[z][x+1].u - g[z][x].u) / dx;
                 }
-
-                if (g[z][x].v > 0) {
-                    dv_dz = (g[z][x].v - g[z-1][x].v) / dz;
-                } else {
-                    dv_dz = (g[z+1][x].v - g[z][x].v) / dz;
-                }
-
-                double advection_u = g[z][x].u * du_dx + g[z][x].v * du_dz;//これがいわゆる(v・∇)v
-                
-                double dv_dx,dv_dz;
                 if (g[z][x].u > 0) {
+                    du_dz = (g[z][x].v - g[z-1][x].v) / dz;
+                } else {
+                    du_dz = (g[z+1][x].v - g[z][x].v) / dz;
+                }
+                double advection_u = g[z][x].u * du_dx + g[z][x].v * du_dz;//これがいわゆる(v・∇)v
+
+                double dv_dx,dv_dz;
+                if (g[z][x].v > 0) {
                     dv_dx = (g[z][x].u - g[z][x-1].u) / dx;
-                } else {    
+                } else {
                     dv_dx = (g[z][x+1].u - g[z][x].u) / dx;
                 }
-
                 if (g[z][x].v > 0) {
                     dv_dz = (g[z][x].v - g[z-1][x].v) / dz;
                 } else {
                     dv_dz = (g[z+1][x].v - g[z][x].v) / dz;
                 }
-
                 double advection_v = g[z][x].u * dv_dx + g[z][x].v * dv_dz;
+                
 
                 //粘性項
                 double du_dx2 = (g[z][x+1].u - 2*g[z][x].u + g[z][x-1].u) / (dx*dx);
@@ -76,8 +73,8 @@ int main() {
                 double dv_dz2 = (g[z+1][x].v - 2*g[z][x].v + g[z-1][x].v) / (dz*dz);
                 double viscosity_v = nu * (dv_dx2 + dv_dz2);
 
-                gn[z][x].u = g[z][x].u + dt * (advection_u + viscosity_u);
-                gn[z][x].v = g[z][x].v + dt * (advection_v + viscosity_v);
+                gn[z][x].u = g[z][x].u + dt * (-advection_u + viscosity_u);
+                gn[z][x].v = g[z][x].v + dt * (-advection_v + viscosity_v);
             }
         }
         // Step 2: 圧力のポアソン方程式を解くループ (ヤコビ法)
@@ -152,6 +149,13 @@ int main() {
         for(int z = 0; z < zMax; z++) {
             gn[z][xMax-1].u = 0;
             gn[z][xMax-1].v = 0;
+        }
+
+        //gをgnで更新
+        for(int z=0;z<zMax;z++) {
+            for(int x=0;x<xMax;x++) {
+                g[z][x] = gn[z][x];
+            }
         }
 
         t += dt;
