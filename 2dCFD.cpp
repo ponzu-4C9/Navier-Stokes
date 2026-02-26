@@ -32,7 +32,7 @@ static double pn[zMax][xMax];
 //z方向の風をv
 
 double rho = 1;//1.225;
-double nu  = 0.001;//1.48e-5; // 空気の動粘性係数 (m^2/s)
+double nu  = 0.0001;//1.48e-5; // 空気の動粘性係数 (m^2/s)
 
 // ファイルにヘッダ（格子情報）を書き込む
 void writeHeader(FILE* fp) {
@@ -74,7 +74,7 @@ void boundary(double u_arr[][xMax], double v_arr[][xMax], double U_lid){
 }
 
 int main() {
-    double t_max = 10;//[s]
+    double t_max = 50;//[s]
     double dt = 0.0005;//[s]
     double t = 0;
     double U_lid = 1;
